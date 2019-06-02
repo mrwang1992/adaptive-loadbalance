@@ -1,12 +1,9 @@
 package com.aliware.tianchi;
 
 import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.Activate;
-import org.apache.dubbo.rpc.Filter;
-import org.apache.dubbo.rpc.Invocation;
-import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Result;
-import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.*;
 
 /**
  * @author daofeng.xjf
@@ -19,11 +16,21 @@ import org.apache.dubbo.rpc.RpcException;
 public class TestClientFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        URL url = invoker.getUrl();
+        String methodName = invocation.getMethodName();
+        RpcStatus count = RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName());
+        count.beginCount(url, methodName);
+
+        boolean isSuccess = true;
+        long begin = System.currentTimeMillis();
         try{
             Result result = invoker.invoke(invocation);
             return result;
         }catch (Exception e){
+            isSuccess = false;
             throw e;
+        } finally {
+            count.endCount(url, methodName, System.currentTimeMillis() - begin, isSuccess);
         }
 
     }
